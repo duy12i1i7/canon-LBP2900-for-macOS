@@ -65,6 +65,7 @@ lpstat -p Canon_LBP2900        # trạng thái hàng đợi
 
 Driver gửi **từng trang một và chờ trang đó in ra thật rồi mới sang trang kế**, và báo tiến trình khi in. Cách xem đáng tin:
 
+- **App thanh menu (khuyến nghị, không cần Terminal):** một app native nhỏ hiện `🖨 2/3` trên thanh menu khi in. Xem [`menubar/`](menubar/) — `cd menubar && ./install-menubar.sh` (không cần sudo). App này ra đời vì ô "Printing N of M" của Apple bị đơ với máy này (xem ghi chú bên dưới).
 - **Terminal (chính xác nhất):** chạy [`progress.sh`](progress.sh):
 
   ```bash

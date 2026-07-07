@@ -65,6 +65,7 @@ There is **no Canon-style floating status window** — that’s a closed Windows
 
 The driver sends pages **one at a time and waits for each to physically print before the next**, and reports progress as it goes. The reliable ways to watch it:
 
+- **Menu-bar app (recommended, no Terminal):** a tiny native app that shows `🖨 2/3` in the menu bar while printing. See [`menubar/`](menubar/) — `cd menubar && ./install-menubar.sh` (no sudo). This exists because Apple's own “Printing N of M” widget is frozen for this printer (see the note below).
 - **Terminal (most precise):** run [`progress.sh`](progress.sh):
 
   ```bash
