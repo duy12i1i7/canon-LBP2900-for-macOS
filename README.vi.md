@@ -4,6 +4,11 @@
 
 [🇬🇧 English](README.md) &nbsp;|&nbsp; 🇻🇳 Tiếng Việt
 
+Chạy trên **Apple Silicon (M1/M2/M3/M4) và Intel**, các bản macOS mới (Sonoma,
+Sequoia, Tahoe — macOS 14 / 15 / 26). Nếu bạn đang tìm **driver Canon 2900 cho Mac**,
+**driver máy in Canon LBP2900 macOS / MacBook**, **cách cài Canon LBP2900 trên Mac**,
+hay **driver LBP-2900 / LBP2900B cho Apple Silicon** — đúng chỗ rồi. Cài một lệnh là in được.
+
 ---
 
 LBP2900 là máy in **host-based (GDI)**: không có bộ thông dịch PostScript/PCL, chỉ nói giao thức độc quyền **CAPT** của Canon (nén Smart Compression Architecture / Hi-SCoA). Gói driver macOS chính thức của Canon chỉ hỗ trợ từ LBP3000 trở lên, nên con 2900 bị bỏ rơi.

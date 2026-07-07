@@ -4,6 +4,12 @@
 
 🇬🇧 English &nbsp;|&nbsp; [🇻🇳 Tiếng Việt](README.vi.md)
 
+Works on **Apple Silicon (M1/M2/M3/M4) and Intel** Macs across modern macOS
+(Sonoma, Sequoia, Tahoe — macOS 14 / 15 / 26). If you were looking for a
+**Canon 2900 Mac driver**, **Canon LBP2900 macOS driver**, **LBP-2900 / LBP2900B
+driver for Mac**, or **how to install the Canon LBP2900 on macOS / Apple Silicon** —
+this is it. One command and you're printing.
+
 ---
 
 The LBP2900 is a **host-based (GDI) printer**: it has no PostScript/PCL interpreter and only speaks Canon's proprietary **CAPT** protocol (Smart Compression Architecture / Hi-SCoA). Canon's official macOS packages only cover the LBP3000 and up, so the 2900 is left unsupported.
