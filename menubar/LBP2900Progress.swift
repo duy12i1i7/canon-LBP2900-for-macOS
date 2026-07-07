@@ -37,6 +37,7 @@ final class ProgressWatcher: NSObject {
         super.init()
 
         statusItem.button?.title = "🖨"
+        statusItem.isVisible = false   // hidden until a print job is active
         let menu = NSMenu()
         let header = NSMenuItem(title: "Canon LBP2900", action: nil, keyEquivalent: "")
         header.isEnabled = false
@@ -94,10 +95,11 @@ final class ProgressWatcher: NSObject {
 
     func render(_ r: (String?, Int?, Int?)?) {
         guard let (name, current, total) = r else {
-            statusItem.button?.title = "🖨"
-            statusLine.title = "Idle — no active job"
+            statusItem.isVisible = false   // vanish from the menu bar when idle
+            statusLine.title = "Idle"
             return
         }
+        statusItem.isVisible = true        // appear only while a job is active
         let cur = current ?? 0
         var title: String
         var line: String
