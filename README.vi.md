@@ -74,11 +74,23 @@ Driver gửi **từng trang một và chờ trang đó in ra thật rồi mới 
   Nó đọc `job-media-sheets-completed` của CUPS (do `PAGE:` của driver cập nhật, đã kiểm chứng tăng theo thời gian thực). In từ hộp thoại macOS thì tổng thường đã biết → ra `printed X / Y`; còn `lpr file.txt` trơn có thể chỉ hiện `printed X`.
 - **Chính mấy tờ giấy** — cứ vài giây lại ra một tờ.
 
-> **Về con số “Printing N of M” của macOS.** Ô đếm trang đó do **macOS/PrintCore tự
-> viết**, không phải driver, và với driver host-based như thế này nó **không đáng tin** —
-> có khi đứng ở “1”, có khi nhảy số lạ khi in từ Word/Excel. Đó là quirk phía UI của
-> Apple; driver không đụng (và không đụng sạch được) vào ô đó. Bộ đếm CUPS bên dưới
-> *vẫn* đúng — đó là cái `progress.sh` đọc; hãy dùng `progress.sh` để có số chính xác.
+> **Về con số “Printing N of M” của macOS — và vì sao driver không sửa được.**
+> Trên macOS đời mới, ô này **đứng im ở “1 of M”** với LBP2900 (và mọi máy in CUPS
+> host-based / không-AirPrint). Đã điều tra kỹ và kết luận **không thể sửa từ driver**,
+> do bản chất thiết kế:
+>
+> - Hai bộ đếm CUPS mà filter điều khiển — `job-media-sheets-completed` và
+>   `job-impressions-completed` — đã đo được **tăng đúng live** (`0→1→2→3`) theo từng tờ.
+> - Nhưng UI của Apple **phớt lờ chúng**. Nó vẫn hiện đúng tổng “of 3” *trong khi* thuộc
+>   tính `job-impressions` của CUPS **bị bỏ trống** — chứng tỏ proxy in của Apple lấy số
+>   trang từ **file spool (phía PrintCore)**, không đọc từ job CUPS mà driver cập nhật.
+>   Vì vậy **không có thuộc tính nào phía filter** để đẩy được số “N”.
+> - Tiến trình trang trực tiếp ở ô đó **chỉ chạy với máy AirPrint / IPP Everywhere** (báo
+>   ngược qua IPP). LBP2900 là thiết bị USB CAPT/GDI thô, không có IPP → về cấu trúc
+>   không nuôi được ô đó.
+>
+> Driver báo tiến trình đúng — dùng [`progress.sh`](progress.sh) để có số chính xác, hoặc
+> cứ nhìn tờ giấy. Ô đơ này là **giới hạn nền tảng macOS** chung cho mọi driver CUPS cổ điển.
 
 ## Gỡ lỗi
 

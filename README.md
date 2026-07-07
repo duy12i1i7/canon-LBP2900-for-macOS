@@ -74,12 +74,25 @@ The driver sends pages **one at a time and waits for each to physically print be
   It reads CUPS’ `job-media-sheets-completed` (driven by the driver’s `PAGE:` reports and verified to advance in real time). From the macOS print dialog the total is usually known, so you get `printed X / Y`; a plain `lpr file.txt` may only show `printed X`.
 - **The pages themselves** — one sheet ejects roughly every several seconds.
 
-> **Note on macOS’ “Printing N of M” text.** That page-counter in Apple’s own print UI
-> is written by macOS/PrintCore, not by this driver, and for host-based CUPS drivers it
-> is unreliable — it may sit at “1”, or show odd numbers when printing from Word/Excel.
-> That’s an Apple UI quirk; the driver does not (and can’t cleanly) touch it. The real
-> CUPS counter underneath *is* correct, which is what `progress.sh` reads — use that for
-> an accurate live count.
+> **Note on macOS’ “Printing N of M” text — and why the driver can’t fix it.**
+> On modern macOS this counter stays frozen at “1 of M” for the LBP2900 (and any
+> non-AirPrint / host-based CUPS printer). This was investigated thoroughly and it is
+> **not fixable from the driver**, by design:
+>
+> - The two CUPS job counters the filter *does* drive — `job-media-sheets-completed`
+>   and `job-impressions-completed` — were measured advancing correctly live
+>   (`0→1→2→3`) as each page prints.
+> - Yet the Apple UI ignores them. It even shows the correct total “of 3” while the
+>   CUPS `job-impressions` attribute is **unset** — proving Apple’s print proxy reads
+>   its page count from the *spool document* on the PrintCore side, not from the CUPS
+>   job the driver updates. So there is no filter-side attribute that can move “N”.
+> - Live per-page progress in that widget only works for **AirPrint / IPP Everywhere**
+>   printers, which report progress back over IPP. The LBP2900 is a raw USB CAPT/GDI
+>   device with no IPP, so it structurally can’t feed that widget.
+>
+> The driver’s progress reporting is correct — use [`progress.sh`](progress.sh) for an
+> accurate live count, or just watch the pages. The frozen widget is a macOS platform
+> limitation shared by all classic CUPS drivers.
 
 ## Troubleshooting
 
