@@ -297,9 +297,12 @@ static void do_print(int fd)
 		}
 
 		fprintf(stderr, "DEBUG: CAPT: rastertocapt: sending page data\n");
-		/* Report page progress to CUPS -> macOS print queue shows
-		 * "Printing page N". Format: PAGE: <page-number> <copies>. */
+		/* Report page progress to CUPS. PAGE: drives job-media-sheets-completed
+		 * (read by progress.sh); INFO: sets job-printer-state-message, which the
+		 * macOS print-queue window shows as a live status line "Printing page N"
+		 * (Apple's separate "N of M" counter field is not updatable from here). */
 		fprintf(stderr, "PAGE: %u 1\n", state->ipage);
+		fprintf(stderr, "INFO: Printing page %u\n", state->ipage);
 		send_page_data(state, cached_page);
 
 		fprintf(stderr, "DEBUG: CAPT: rastertocapt: end page %u\n", state->ipage);

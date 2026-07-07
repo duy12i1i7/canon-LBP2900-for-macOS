@@ -1,6 +1,6 @@
-# Patch cho captdriver (bản master) -> driver LBP2900 chạy trên macOS
-# Áp: đặt file này ở gốc cây nguồn captdriver rồi:  patch -p1 < lbp2900-macos.patch
-# Gồm: (1) fix treo trạng thái LBP2900  (2) PAGE: tiến trình  (3) STATE: hết giấy
+# Patch: captdriver (master) -> Canon LBP2900 working on macOS
+# Apply from the captdriver source root:  patch -p1 < lbp2900-macos.patch
+# (1) LBP2900 status-strategy hang fix  (2) PAGE: + INFO: progress  (3) STATE: out-of-paper
 #
 --- a/src/prn_lbp2900.c	2022-10-13 20:10:28
 +++ b/src/prn_lbp2900.c	2026-07-07 14:19:47
@@ -50,14 +50,17 @@
  register_printer("LBP2900", lbp2900_ops.ops, WORKS);
  
 --- a/src/rastertocapt.c	2022-10-13 20:10:28
-+++ b/src/rastertocapt.c	2026-07-07 14:18:37
-@@ -297,6 +297,9 @@
++++ b/src/rastertocapt.c	2026-07-07 16:07:24
+@@ -297,6 +297,12 @@
  		}
  
  		fprintf(stderr, "DEBUG: CAPT: rastertocapt: sending page data\n");
-+		/* Report page progress to CUPS -> macOS print queue shows
-+		 * "Printing page N". Format: PAGE: <page-number> <copies>. */
++		/* Report page progress to CUPS. PAGE: drives job-media-sheets-completed
++		 * (read by progress.sh); INFO: sets job-printer-state-message, which the
++		 * macOS print-queue window shows as a live status line "Printing page N"
++		 * (Apple's separate "N of M" counter field is not updatable from here). */
 +		fprintf(stderr, "PAGE: %u 1\n", state->ipage);
++		fprintf(stderr, "INFO: Printing page %u\n", state->ipage);
  		send_page_data(state, cached_page);
  
  		fprintf(stderr, "DEBUG: CAPT: rastertocapt: end page %u\n", state->ipage);

@@ -63,16 +63,24 @@ There is **no Canon-style floating status window** — that’s a closed Windows
 
 ### Multi-page jobs (Word / Excel etc.)
 
-The driver sends pages **one at a time and waits for each to physically print before the next**, reporting a `PAGE:` update as it goes. So for a big job you can see how far along it is:
+The driver sends pages **one at a time and waits for each to physically print before the next**, and reports progress as it goes. You can watch it three ways:
 
-- **GUI:** open the print queue (System Settings ▸ Printers & Scanners ▸ Canon LBP2900 ▸ *Open Print Queue*, or the Dock icon while printing). It shows a progress bar and the page count, advancing as each sheet comes out.
-- **Terminal:** run [`progress.sh`](progress.sh) for a live one-line counter:
+- **Status line in the print queue** — open it (System Settings ▸ Printers & Scanners ▸ Canon LBP2900 ▸ *Open Print Queue*, or the Dock icon while printing). The driver pushes a live **“Printing page N”** status line that updates as each sheet comes out.
+- **Terminal (most precise):** run [`progress.sh`](progress.sh):
 
   ```bash
   ./progress.sh          # prints e.g.  job #12 "Report.xlsx": printed 4/10 pages
   ```
 
-  It reads CUPS' `job-media-sheets-completed` (updated by the driver's `PAGE:` reports). When you print from the macOS print dialog the total page count is usually known, so you get `printed X / Y`; a plain `lpr file.txt` may only show `printed X`.
+  It reads CUPS’ `job-media-sheets-completed` (driven by the driver’s `PAGE:` reports and verified to advance in real time). From the macOS print dialog the total is usually known, so you get `printed X / Y`; a plain `lpr file.txt` may only show `printed X`.
+- **The pages themselves** — one sheet ejects roughly every several seconds.
+
+> **Note on macOS’ “Printing 1 of N” text.** That specific numeric field in Apple’s
+> print UI often **stays at “1” and never advances** for host-based CUPS drivers like
+> this one — it’s an Apple UI limitation, not a driver bug. The underlying CUPS
+> counter *does* advance correctly (that’s what `progress.sh` and the “Printing page N”
+> status line read); Apple’s numeric widget just doesn’t reflect it. Use the status
+> line or `progress.sh` for a moving indicator.
 
 ## Troubleshooting
 
