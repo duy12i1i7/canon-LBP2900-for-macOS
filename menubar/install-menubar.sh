@@ -51,14 +51,12 @@ cat > "$PLIST" <<PLISTEOF
 </plist>
 PLISTEOF
 
-# 4. (Re)load it.
+# 4. (Re)load it. RunAtLoad=true starts it immediately (no re-login needed);
+#    KeepAlive=true restarts it if it ever quits. launchd owns the single
+#    instance — don't launch a second copy by hand.
+pkill -f "$DEST_BIN" 2>/dev/null || true
 launchctl unload "$PLIST" 2>/dev/null || true
 launchctl load "$PLIST"
-
-# Also launch it right now so the icon appears without a re-login.
-pkill -f "$DEST_BIN" 2>/dev/null || true
-sleep 0.3
-"$DEST_BIN" >/dev/null 2>&1 &
 
 echo
 echo "OK. Look for the 🖨 icon in the menu bar (top-right)."
