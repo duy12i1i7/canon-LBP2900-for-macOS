@@ -61,6 +61,19 @@ There is **no Canon-style floating status window** — that’s a closed Windows
 - **Out of paper** — a warning badge + notification (`STATE: +media-empty`); reload paper and the job continues
 - **Offline / not connected** — reported by the CUPS USB backend when the cable is unplugged or the printer is off
 
+### Multi-page jobs (Word / Excel etc.)
+
+The driver sends pages **one at a time and waits for each to physically print before the next**, reporting a `PAGE:` update as it goes. So for a big job you can see how far along it is:
+
+- **GUI:** open the print queue (System Settings ▸ Printers & Scanners ▸ Canon LBP2900 ▸ *Open Print Queue*, or the Dock icon while printing). It shows a progress bar and the page count, advancing as each sheet comes out.
+- **Terminal:** run [`progress.sh`](progress.sh) for a live one-line counter:
+
+  ```bash
+  ./progress.sh          # prints e.g.  job #12 "Report.xlsx": printed 4/10 pages
+  ```
+
+  It reads CUPS' `job-media-sheets-completed` (updated by the driver's `PAGE:` reports). When you print from the macOS print dialog the total page count is usually known, so you get `printed X / Y`; a plain `lpr file.txt` may only show `printed X`.
+
 ## Troubleshooting
 
 Enable verbose logging and watch it while you print:

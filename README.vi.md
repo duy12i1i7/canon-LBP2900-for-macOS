@@ -61,6 +61,19 @@ lpstat -p Canon_LBP2900        # trạng thái hàng đợi
 - **Hết giấy** — badge cảnh báo + thông báo (`STATE: +media-empty`); nạp giấy lại là job chạy tiếp
 - **Ngoại tuyến / chưa kết nối** — backend USB của CUPS báo khi rút cáp hoặc tắt máy in
 
+### Job nhiều trang (Word / Excel...)
+
+Driver gửi **từng trang một và chờ trang đó in ra thật rồi mới sang trang kế**, mỗi trang phát một cập nhật `PAGE:`. Nhờ vậy với job lớn bạn thấy được đang in tới đâu:
+
+- **Giao diện:** mở hàng đợi in (Cài đặt hệ thống ▸ Máy in & Máy quét ▸ Canon LBP2900 ▸ *Mở hàng đợi in*, hoặc icon máy in dưới Dock khi đang in). Nó hiện thanh tiến trình + số trang, nhích lên theo từng tờ chui ra.
+- **Terminal:** chạy [`progress.sh`](progress.sh) để có bộ đếm trực tiếp một dòng:
+
+  ```bash
+  ./progress.sh          # ví dụ:  job #12 "Report.xlsx": printed 4/10 pages
+  ```
+
+  Nó đọc `job-media-sheets-completed` của CUPS (được driver cập nhật qua `PAGE:`). Khi in từ hộp thoại in của macOS thì tổng số trang thường đã biết, nên ra `printed X / Y`; còn `lpr file.txt` trơn có thể chỉ hiện `printed X`.
+
 ## Gỡ lỗi
 
 Bật log chi tiết và xem khi in:
