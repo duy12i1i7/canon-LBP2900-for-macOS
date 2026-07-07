@@ -1,21 +1,83 @@
 # Patch: captdriver (master) -> Canon LBP2900 working on macOS
 # Apply from the captdriver source root:  patch -p1 < lbp2900-macos.patch
-# (1) LBP2900 status-strategy hang fix  (2) PAGE: progress  (3) STATE: out-of-paper
+# (1) status-strategy hang fix  (2) PAGE: progress  (3) STATE: out-of-paper
+# (4) 100ms status polling instead of sleep(1) -> near-continuous multi-page
 #
+--- a/src/std.h	2022-10-13 20:10:28
++++ b/src/std.h	2026-07-07 16:31:08
+@@ -31,3 +31,10 @@
+ 	((type *) ((char *) ptr - offsetof(type, member)))
+ 
+ #define debug true
++
++/* Status-poll interval for the printer wait loops (microseconds). The stock
++ * driver polled once per second (sleep(1)), which idles the print engine for up
++ * to ~1 s at every handshake and makes multi-page jobs stall between sheets.
++ * Polling at 100 ms keeps the printer fed and prints near-continuously, without
++ * changing the CAPT command sequence. usleep() needs <unistd.h>. */
++#define CAPT_POLL_US 100000
+--- a/src/capt-status.c	2022-10-13 20:10:28
++++ b/src/capt-status.c	2026-07-07 16:31:26
+@@ -122,17 +122,17 @@
+ void capt_wait_ready(void)
+ {
+ 	while (FLAG(capt_get_status(), CAPT_FL_BUSY))
+-		sleep(1);
++		usleep(CAPT_POLL_US);
+ }
+ 
+ void capt_wait_xready(void)
+ {
+ 	while (FLAG(capt_get_xstatus(), CAPT_FL_BUSY))
+-		sleep(1);
++		usleep(CAPT_POLL_US);
+ }
+ 
+ void capt_wait_xready_only(void)
+ {
+        while (FLAG(capt_get_xstatus_only(), CAPT_FL_BUSY))
+-               sleep(1);
++               usleep(CAPT_POLL_US);
+ }
 --- a/src/prn_lbp2900.c	2022-10-13 20:10:28
-+++ b/src/prn_lbp2900.c	2026-07-07 14:19:47
-@@ -127,6 +127,10 @@
++++ b/src/prn_lbp2900.c	2026-07-07 16:32:56
+@@ -126,6 +126,10 @@
+ 	(void) state;
  	uint8_t buf[8];
  	size_t size;
- 
++
 +	/* Clear any stale printer-state-reason at the start of a job so a
 +	 * previous "out of paper" doesn't linger in the macOS queue window. */
 +	fprintf(stderr, "STATE: -media-empty\n");
-+
+ 
  	capt_sendrecv(CAPT_IDENT, NULL, 0, NULL, 0);
  	sleep(1);
- 	capt_init_status();
-@@ -353,10 +357,15 @@
+@@ -313,7 +317,7 @@
+ 	while (1) {
+ 		if (! FLAG(lbp2900_get_status(state->ops), CAPT_FL_BUFFERFULL))
+ 			break;
+-		sleep(1);
++		usleep(CAPT_POLL_US);
+ 	}
+ 
+ 	capt_multi_begin(CAPT_SET_PARMS);
+@@ -334,12 +338,13 @@
+ 
+ 	capt_send(CAPT_PRINT_DATA_END, NULL, 0);
+ 
+-	/* waiting until the page is received */
++	/* waiting until the page is received (check first, then poll finely so
++	 * a ready printer isn't stalled a whole second before the next page) */
+ 	while (1) {
+-	  sleep(1);
+ 	  status = lbp2900_get_status(state->ops);
+ 	  if (status->page_received == status->page_decoding)
+ 	    break;
++	  usleep(CAPT_POLL_US);
+ 	}
+ 	send_job_start(2, status->page_decoding);
+ 	lbp2900_wait_ready(state->ops);
+@@ -353,15 +358,20 @@
  	while (1) {
  		const struct capt_status_s *status = lbp2900_get_status(state->ops);
  		/* Interesting. Using page_printing here results in shifted print */
@@ -32,7 +94,22 @@
  			if (FLAG(status, CAPT_FL_PRINTING) || FLAG(status, CAPT_FL_PROCESSING1))
  				continue;
  			return false;
-@@ -480,8 +489,14 @@
+ 		}
+-		sleep(1);
++		usleep(CAPT_POLL_US);
+ 	}
+ }
+ 
+@@ -375,7 +385,7 @@
+ 			send_job_start(4, status->page_completed);
+ 			break;
+ 		}
+-		sleep(1);
++		usleep(CAPT_POLL_US);
+ 	}
+ 	capt_sendrecv(CAPT_JOB_END, jbuf, 2, NULL, 0);
+ }
+@@ -480,8 +490,14 @@
  		.init = lbp2900_gpio_init,
  		.blink = lbp2900_gpio_blink,
  	},

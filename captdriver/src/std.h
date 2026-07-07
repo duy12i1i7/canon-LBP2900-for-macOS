@@ -31,3 +31,10 @@
 	((type *) ((char *) ptr - offsetof(type, member)))
 
 #define debug true
+
+/* Status-poll interval for the printer wait loops (microseconds). The stock
+ * driver polled once per second (sleep(1)), which idles the print engine for up
+ * to ~1 s at every handshake and makes multi-page jobs stall between sheets.
+ * Polling at 100 ms keeps the printer fed and prints near-continuously, without
+ * changing the CAPT command sequence. usleep() needs <unistd.h>. */
+#define CAPT_POLL_US 100000

@@ -317,7 +317,7 @@ static bool lbp2900_page_prologue(struct printer_state_s *state, const struct pa
 	while (1) {
 		if (! FLAG(lbp2900_get_status(state->ops), CAPT_FL_BUFFERFULL))
 			break;
-		sleep(1);
+		usleep(CAPT_POLL_US);
 	}
 
 	capt_multi_begin(CAPT_SET_PARMS);
@@ -338,12 +338,13 @@ static bool lbp2900_page_epilogue(struct printer_state_s *state, const struct pa
 
 	capt_send(CAPT_PRINT_DATA_END, NULL, 0);
 
-	/* waiting until the page is received */
+	/* waiting until the page is received (check first, then poll finely so
+	 * a ready printer isn't stalled a whole second before the next page) */
 	while (1) {
-	  sleep(1);
 	  status = lbp2900_get_status(state->ops);
 	  if (status->page_received == status->page_decoding)
 	    break;
+	  usleep(CAPT_POLL_US);
 	}
 	send_job_start(2, status->page_decoding);
 	lbp2900_wait_ready(state->ops);
@@ -370,7 +371,7 @@ static bool lbp2900_page_epilogue(struct printer_state_s *state, const struct pa
 				continue;
 			return false;
 		}
-		sleep(1);
+		usleep(CAPT_POLL_US);
 	}
 }
 
@@ -384,7 +385,7 @@ static void lbp2900_job_epilogue(struct printer_state_s *state)
 			send_job_start(4, status->page_completed);
 			break;
 		}
-		sleep(1);
+		usleep(CAPT_POLL_US);
 	}
 	capt_sendrecv(CAPT_JOB_END, jbuf, 2, NULL, 0);
 }

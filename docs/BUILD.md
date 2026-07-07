@@ -58,14 +58,20 @@ cd captdriver
 patch -p1 < /path/to/patches/lbp2900-macos.patch
 ```
 
-It contains three changes:
+It contains four changes:
 
 1. **Hang fix** — register the LBP2900 with the LBP3010 ("WORKS") status
    strategy (`capt_get_xstatus_only` / `capt_wait_xready_only`) so the per-page
    counters, which only exist in the extended status reply (`0xA0A8`), are always
    refreshed. Without this the end-of-page wait loops never terminate.
-2. **`PAGE:`** progress reporting in `rastertocapt.c` → macOS shows "Printing page N".
+2. **`PAGE:`** progress reporting in `rastertocapt.c` (drives `job-media-sheets-completed`).
 3. **`STATE: +/-media-empty`** in `prn_lbp2900.c` → macOS shows "Out of paper".
+4. **Faster polling** — the stock driver polled printer status once per second
+   (`sleep(1)`) in every wait loop, idling the engine up to ~1 s per handshake and
+   stalling multi-page jobs between sheets. Poll every 100 ms (`CAPT_POLL_US` in
+   `std.h`) and check-before-wait, so multi-page jobs print near-continuously.
+   Measured: inter-page gap dropped from ~9–11 s to ~6–7 s per page (engine
+   native is ~5 s).
 
 ## Quick self-test (no printer needed)
 
