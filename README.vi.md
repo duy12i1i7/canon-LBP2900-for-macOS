@@ -27,23 +27,31 @@ Dự án này cung cấp một **CUPS filter** (`rastertocapt`) hiện thực gi
 - **Apple Silicon (arm64):** đã kèm sẵn binary dựng trước — không cần biên dịch.
 - **Intel (x86_64):** không kèm binary sẵn; script cài sẽ tự build từ mã nguồn. Cần Xcode Command Line Tools (`xcode-select --install`) và autotools (`brew install autoconf automake`).
 
-## Cài đặt
+## Cài đặt — một lệnh duy nhất
+
+Cắm và bật máy in, rồi:
 
 ```bash
 git clone https://github.com/duy12i1i7/canon-LBP2900-for-macOS.git
 cd canon-LBP2900-for-macOS
-chmod +x install.sh uninstall.sh
-# Cắm và bật máy in trước, rồi:
-sudo ./install.sh
+./setup.sh
 ```
 
-Script cài sẽ:
-1. đặt filter CAPT vào `/usr/libexec/cups/filter/` (nằm trên data volume ghi được; chạy được dù SIP đang bật),
-2. đặt PPD vào `/Library/Printers/PPDs/…`,
-3. dò máy in USB và tạo hàng đợi tên `Canon_LBP2900`,
-4. thiết lập **LaunchDaemon tự phục hồi** (xem dưới).
+`setup.sh` làm tất cả — chạy **không** cần `sudo` (nó tự xin mật khẩu khi cần quyền quản trị):
+1. cài filter CAPT vào `/usr/libexec/cups/filter/` (data volume ghi được; chạy dù SIP bật) và PPD vào `/Library/Printers/PPDs/…`,
+2. dò máy in USB và tạo hàng đợi `Canon_LBP2900`,
+3. thiết lập **LaunchDaemon tự phục hồi** để driver sống sót qua bản cập nhật macOS (xem dưới),
+4. cài **app tiến trình trên thanh menu**.
 
-Nếu chưa cắm máy in, filter và PPD vẫn được cài — chỉ cần chạy lại `sudo ./install.sh` sau khi cắm.
+Nếu chưa cắm máy in, các phần khác vẫn được cài — chỉ cần chạy lại `./setup.sh` sau khi cắm để thêm hàng đợi.
+
+<details><summary>Muốn cài từng phần riêng?</summary>
+
+```bash
+sudo ./install.sh                 # driver + hàng đợi + tự phục hồi
+cd menubar && ./install-menubar.sh   # app menu bar (không cần sudo)
+```
+</details>
 
 ### Sống sót qua bản cập nhật macOS
 

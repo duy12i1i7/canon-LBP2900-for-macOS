@@ -27,23 +27,33 @@ This project provides a **CUPS filter** (`rastertocapt`) that implements CAPT, p
 - **Apple Silicon (arm64):** a prebuilt filter is bundled — nothing to compile.
 - **Intel (x86_64):** no prebuilt binary is bundled; the installer builds from source automatically. You need Xcode Command Line Tools (`xcode-select --install`) and autotools (`brew install autoconf automake`).
 
-## Install
+## Install — one command
+
+Plug in and power on the printer, then:
 
 ```bash
 git clone https://github.com/duy12i1i7/canon-LBP2900-for-macOS.git
 cd canon-LBP2900-for-macOS
-chmod +x install.sh uninstall.sh
-# Plug in and power on the printer first, then:
-sudo ./install.sh
+./setup.sh
 ```
 
-The installer:
-1. installs the CAPT filter into `/usr/libexec/cups/filter/` (on the writable data volume; works with SIP enabled),
-2. installs the PPD into `/Library/Printers/PPDs/…`,
-3. detects the USB printer and creates a queue named `Canon_LBP2900`,
-4. sets up a **self-healing LaunchDaemon** (see below).
+`setup.sh` does everything — run it **without** `sudo` (it asks for your password
+only when it needs admin rights):
+1. installs the CAPT filter into `/usr/libexec/cups/filter/` (writable data volume; works with SIP enabled) and the PPD into `/Library/Printers/PPDs/…`,
+2. detects the USB printer and creates a queue named `Canon_LBP2900`,
+3. sets up a **self-healing LaunchDaemon** so the driver survives macOS updates (see below),
+4. installs the **menu-bar progress app**.
 
-If the printer isn’t connected yet, the filter and PPD are still installed — just re-run `sudo ./install.sh` once it’s plugged in.
+If the printer isn’t connected yet, everything installs anyway — just re-run
+`./setup.sh` once it’s plugged in to add the queue.
+
+<details><summary>Prefer to install the pieces separately?</summary>
+
+```bash
+sudo ./install.sh                 # driver + queue + self-heal
+cd menubar && ./install-menubar.sh   # menu-bar app (no sudo)
+```
+</details>
 
 ### Surviving macOS updates
 
