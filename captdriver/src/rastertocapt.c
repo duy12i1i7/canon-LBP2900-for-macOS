@@ -297,12 +297,13 @@ static void do_print(int fd)
 		}
 
 		fprintf(stderr, "DEBUG: CAPT: rastertocapt: sending page data\n");
-		/* Report page progress to CUPS. PAGE: drives job-media-sheets-completed
-		 * (read by progress.sh); INFO: sets job-printer-state-message, which the
-		 * macOS print-queue window shows as a live status line "Printing page N"
-		 * (Apple's separate "N of M" counter field is not updatable from here). */
+		/* PAGE: silently drives CUPS job-media-sheets-completed, which
+		 * progress.sh reads for an accurate live page count. We deliberately
+		 * do NOT emit an INFO: "Printing page N" string: on the macOS app print
+		 * path (Word/Excel etc.) PrintCore writes its own "N of M" text into the
+		 * same job-printer-state-message, so a second writer just produces a
+		 * jumbled, flickering status line. */
 		fprintf(stderr, "PAGE: %u 1\n", state->ipage);
-		fprintf(stderr, "INFO: Printing page %u\n", state->ipage);
 		send_page_data(state, cached_page);
 
 		fprintf(stderr, "DEBUG: CAPT: rastertocapt: end page %u\n", state->ipage);

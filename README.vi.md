@@ -63,9 +63,8 @@ lpstat -p Canon_LBP2900        # trạng thái hàng đợi
 
 ### Job nhiều trang (Word / Excel...)
 
-Driver gửi **từng trang một và chờ trang đó in ra thật rồi mới sang trang kế**, và báo tiến trình khi in. Bạn xem được theo 3 cách:
+Driver gửi **từng trang một và chờ trang đó in ra thật rồi mới sang trang kế**, và báo tiến trình khi in. Cách xem đáng tin:
 
-- **Dòng trạng thái trong hàng đợi in** — mở hàng đợi (Cài đặt hệ thống ▸ Máy in & Máy quét ▸ Canon LBP2900 ▸ *Mở hàng đợi in*, hoặc icon máy in dưới Dock khi đang in). Driver đẩy vào một dòng **“Printing page N”** cập nhật theo từng tờ ra.
 - **Terminal (chính xác nhất):** chạy [`progress.sh`](progress.sh):
 
   ```bash
@@ -75,12 +74,11 @@ Driver gửi **từng trang một và chờ trang đó in ra thật rồi mới 
   Nó đọc `job-media-sheets-completed` của CUPS (do `PAGE:` của driver cập nhật, đã kiểm chứng tăng theo thời gian thực). In từ hộp thoại macOS thì tổng thường đã biết → ra `printed X / Y`; còn `lpr file.txt` trơn có thể chỉ hiện `printed X`.
 - **Chính mấy tờ giấy** — cứ vài giây lại ra một tờ.
 
-> **Về con số “Printing 1 of N” của macOS.** Ô số đó trong UI in của Apple **thường
-> đứng ở “1” không nhích** với các driver host-based như thế này — đó là **giới hạn
-> phía UI của Apple, không phải lỗi driver**. Bộ đếm CUPS bên dưới *vẫn* tăng đúng
-> (chính là cái mà `progress.sh` và dòng “Printing page N” đọc); chỉ có ô số của Apple
-> không phản ánh. Hãy nhìn dòng trạng thái hoặc dùng `progress.sh` để thấy tiến trình
-> nhúc nhích.
+> **Về con số “Printing N of M” của macOS.** Ô đếm trang đó do **macOS/PrintCore tự
+> viết**, không phải driver, và với driver host-based như thế này nó **không đáng tin** —
+> có khi đứng ở “1”, có khi nhảy số lạ khi in từ Word/Excel. Đó là quirk phía UI của
+> Apple; driver không đụng (và không đụng sạch được) vào ô đó. Bộ đếm CUPS bên dưới
+> *vẫn* đúng — đó là cái `progress.sh` đọc; hãy dùng `progress.sh` để có số chính xác.
 
 ## Gỡ lỗi
 
