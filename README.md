@@ -40,9 +40,14 @@ sudo ./install.sh
 The installer:
 1. installs the CAPT filter into `/usr/libexec/cups/filter/` (on the writable data volume; works with SIP enabled),
 2. installs the PPD into `/Library/Printers/PPDs/…`,
-3. detects the USB printer and creates a queue named `Canon_LBP2900`.
+3. detects the USB printer and creates a queue named `Canon_LBP2900`,
+4. sets up a **self-healing LaunchDaemon** (see below).
 
 If the printer isn’t connected yet, the filter and PPD are still installed — just re-run `sudo ./install.sh` once it’s plugged in.
+
+### Surviving macOS updates
+
+A major macOS update can wipe third-party CUPS filters out of `/usr/libexec/cups/filter/`. To make that a non-event, `install.sh` keeps a persistent copy of the filter + PPD in `/Library/Application Support/CanonLBP2900/` (on the data volume, untouched by updates) and installs a LaunchDaemon `com.lbp2900.heal` that runs at every boot and **re-installs the filter/PPD/queue automatically if they went missing**. So after an OS update, the printer just keeps working — no reinstall needed. (Verified by simulating a wipe: the daemon restores the filter on the next run.)
 
 ## Usage
 

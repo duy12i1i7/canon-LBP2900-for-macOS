@@ -40,9 +40,14 @@ sudo ./install.sh
 Script cài sẽ:
 1. đặt filter CAPT vào `/usr/libexec/cups/filter/` (nằm trên data volume ghi được; chạy được dù SIP đang bật),
 2. đặt PPD vào `/Library/Printers/PPDs/…`,
-3. dò máy in USB và tạo hàng đợi tên `Canon_LBP2900`.
+3. dò máy in USB và tạo hàng đợi tên `Canon_LBP2900`,
+4. thiết lập **LaunchDaemon tự phục hồi** (xem dưới).
 
 Nếu chưa cắm máy in, filter và PPD vẫn được cài — chỉ cần chạy lại `sudo ./install.sh` sau khi cắm.
+
+### Sống sót qua bản cập nhật macOS
+
+Bản cập nhật macOS lớn có thể xoá filter của bên thứ ba khỏi `/usr/libexec/cups/filter/`. Để việc đó không còn là vấn đề, `install.sh` lưu một bản bền của filter + PPD trong `/Library/Application Support/CanonLBP2900/` (nằm trên data volume, bản cập nhật không đụng tới) và cài một LaunchDaemon `com.lbp2900.heal` chạy mỗi lần khởi động, **tự cài lại filter/PPD/hàng đợi nếu chúng bị mất**. Nhờ vậy sau khi macOS cập nhật, máy in vẫn in bình thường — không phải cài lại gì. (Đã kiểm chứng bằng cách mô phỏng xoá filter: daemon tự phục hồi ở lần chạy kế.)
 
 ## Cách dùng
 
