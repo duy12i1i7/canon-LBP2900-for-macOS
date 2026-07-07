@@ -1,0 +1,80 @@
+# Building `rastertocapt` from source
+
+The `captdriver/` directory in this repo is upstream
+[captdriver](https://github.com/mounaiban/captdriver) with the macOS/LBP2900
+patch (`patches/lbp2900-macos.patch`) already applied. You only need to build if
+there is no prebuilt binary for your CPU (e.g. Intel), or if you change the code.
+
+## Requirements
+
+- Xcode Command Line Tools: `xcode-select --install`
+- autotools: `brew install autoconf automake`
+- CUPS headers ship with macOS (no extra install needed).
+
+## Build
+
+```bash
+cd captdriver
+autoreconf -fi
+./configure
+
+# IMPORTANT: define _DARWIN_C_SOURCE, otherwise the strict -std=c99 -pedantic
+# flags hide the BSD types (u_char/u_int) that macOS network headers pulled in
+# via <cups/http.h> require, and the build fails with "unknown type name u_char".
+make CFLAGS="-D_DARWIN_C_SOURCE -std=gnu99 -O2"
+# result: captdriver/src/rastertocapt
+```
+
+Copy the result over the bundled prebuilt binary if you want `install.sh` to use
+it, or just run `sudo ../install.sh` — the installer auto-builds when no prebuilt
+binary matches your architecture.
+
+## Universal (arm64 + x86_64) binary
+
+Build once per arch, then combine:
+
+```bash
+# on/for each arch, produce src/rastertocapt, then:
+lipo -create rastertocapt.arm64 rastertocapt.x86_64 -output rastertocapt
+```
+
+## Regenerating the PPD
+
+The PPD is generated from `captdriver/src/canon-lbp.drv` with the CUPS compiler:
+
+```bash
+ppdc -d out captdriver/src/canon-lbp.drv
+# -> out/CanonLBP-2900-3000.ppd
+```
+
+## The patch
+
+All macOS/LBP2900 changes live in `patches/lbp2900-macos.patch`. To apply it to a
+fresh upstream checkout:
+
+```bash
+git clone https://github.com/mounaiban/captdriver.git
+cd captdriver
+patch -p1 < /path/to/patches/lbp2900-macos.patch
+```
+
+It contains three changes:
+
+1. **Hang fix** — register the LBP2900 with the LBP3010 ("WORKS") status
+   strategy (`capt_get_xstatus_only` / `capt_wait_xready_only`) so the per-page
+   counters, which only exist in the extended status reply (`0xA0A8`), are always
+   refreshed. Without this the end-of-page wait loops never terminate.
+2. **`PAGE:`** progress reporting in `rastertocapt.c` → macOS shows "Printing page N".
+3. **`STATE: +/-media-empty`** in `prn_lbp2900.c` → macOS shows "Out of paper".
+
+## Quick self-test (no printer needed)
+
+Round-trips the Hi-SCoA compressor (the most endianness-sensitive part):
+
+```bash
+cd captdriver/tests
+cc -D_DARWIN_C_SOURCE -std=gnu99 -O2 -I../src -o /tmp/test-hiscoa \
+   test-hiscoa.c hiscoa-decompress.c ../src/hiscoa-compress.c ../src/hiscoa-common.c
+printf 'P4\ntag\n800 210\n' > /tmp/t.pbm && head -c 21000 /dev/zero >> /tmp/t.pbm
+/tmp/test-hiscoa < /tmp/t.pbm 2>&1 | grep FINISHED     # expect: FINISHED - 0 errors
+```

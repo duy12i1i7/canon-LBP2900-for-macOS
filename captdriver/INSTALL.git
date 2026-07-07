@@ -1,0 +1,31 @@
+Building and Installing Captdriver From Git: TL;DR Version
+
+git clone https://github.com/mounaiban/captdriver.git captdriver
+cd captdriver
+aclocal
+autoconf
+automake --add-missing
+./configure
+make
+make ppd
+# the following commands must be run with superuser privileges
+make install
+cp -p /usr/local/bin/rastertocapt $(cups-config --serverbin)/filter/
+lpadmin -p $PRINTER_NAME -v $PRINTER_URI -P $PPD_FILE -E
+lpadmin -d $PRINTER_NAME
+
+
+** Notes **
+
+The exact installation commands on your system may differ from the
+above example. For detailed instructions (and what to use in place of
+`$PRINTER_URI`), check out Mounaiban's Captdriver Wiki at:
+
+https://github.com/mounaiban/captdriver/wiki/Building-and-Installing-captdriver%3A-A-Unified-Guide
+
+For security reasons, `rastertocapt` must be approprately locked down
+or it will not work; it must be owned by the `root` user
+with read-and-execute-only permissions to all other users. Please see
+this issue on the original repo for details:
+
+https://github.com/agalakhov/captdriver/issues/7#issuecomment-604221791

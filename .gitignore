@@ -1,0 +1,26 @@
+# Build artifacts (in case you build inside captdriver/)
+*.o
+*.lo
+*.la
+.deps/
+.libs/
+captdriver/Makefile
+captdriver/src/Makefile
+captdriver/tests/Makefile
+captdriver/config.status
+captdriver/config.log
+captdriver/configure
+captdriver/aclocal.m4
+captdriver/autom4te.cache/
+captdriver/compile
+captdriver/depcomp
+captdriver/install-sh
+captdriver/missing
+captdriver/INSTALL
+captdriver/**/*.in
+captdriver/src/rastertocapt
+captdriver/tests/test-hiscoa
+captdriver/tests/captdefilter
+
+# macOS
+.DS_Store

@@ -1,0 +1,63 @@
+# Patch cho captdriver (bản master) -> driver LBP2900 chạy trên macOS
+# Áp: đặt file này ở gốc cây nguồn captdriver rồi:  patch -p1 < lbp2900-macos.patch
+# Gồm: (1) fix treo trạng thái LBP2900  (2) PAGE: tiến trình  (3) STATE: hết giấy
+#
+--- a/src/prn_lbp2900.c	2022-10-13 20:10:28
++++ b/src/prn_lbp2900.c	2026-07-07 14:19:47
+@@ -127,6 +127,10 @@
+ 	uint8_t buf[8];
+ 	size_t size;
+ 
++	/* Clear any stale printer-state-reason at the start of a job so a
++	 * previous "out of paper" doesn't linger in the macOS queue window. */
++	fprintf(stderr, "STATE: -media-empty\n");
++
+ 	capt_sendrecv(CAPT_IDENT, NULL, 0, NULL, 0);
+ 	sleep(1);
+ 	capt_init_status();
+@@ -353,10 +357,15 @@
+ 	while (1) {
+ 		const struct capt_status_s *status = lbp2900_get_status(state->ops);
+ 		/* Interesting. Using page_printing here results in shifted print */
+-		if (status->page_out == status->page_decoding)
++		if (status->page_out == status->page_decoding) {
++			/* Page ejected OK -> clear the out-of-paper reason. */
++			fprintf(stderr, "STATE: -media-empty\n");
+ 			return true;
++		}
+ 		if (FLAG(status, CAPT_FL_NOPAPER2) || FLAG(status, CAPT_FL_NOPAPER1)) {
+ 			fprintf(stderr, "DEBUG: CAPT: no paper\n");
++			/* Surface "Out of paper" in the macOS print queue window. */
++			fprintf(stderr, "STATE: +media-empty\n");
+ 			if (FLAG(status, CAPT_FL_PRINTING) || FLAG(status, CAPT_FL_PROCESSING1))
+ 				continue;
+ 			return false;
+@@ -480,8 +489,14 @@
+ 		.init = lbp2900_gpio_init,
+ 		.blink = lbp2900_gpio_blink,
+ 	},
+-	.get_status = capt_get_xstatus,
+-	.wait_ready = capt_wait_ready,
++	/* LBP2900 fix: always fetch the *extended* status so the page_*
++	 * counters (page_decoding/page_out/page_completed) are refreshed on
++	 * every poll. The conditional capt_get_xstatus only escalates to
++	 * CHKXSTATUS when XSTATUS_CHNG is set, which this unit never sets,
++	 * leaving page_* stale/garbage and hanging the epilogue wait loops.
++	 * This mirrors the known-working LBP3010 configuration. */
++	.get_status = capt_get_xstatus_only,
++	.wait_ready = capt_wait_xready_only,
+ };
+ register_printer("LBP2900", lbp2900_ops.ops, WORKS);
+ 
+--- a/src/rastertocapt.c	2022-10-13 20:10:28
++++ b/src/rastertocapt.c	2026-07-07 14:18:37
+@@ -297,6 +297,9 @@
+ 		}
+ 
+ 		fprintf(stderr, "DEBUG: CAPT: rastertocapt: sending page data\n");
++		/* Report page progress to CUPS -> macOS print queue shows
++		 * "Printing page N". Format: PAGE: <page-number> <copies>. */
++		fprintf(stderr, "PAGE: %u 1\n", state->ipage);
+ 		send_page_data(state, cached_page);
+ 
+ 		fprintf(stderr, "DEBUG: CAPT: rastertocapt: end page %u\n", state->ipage);
