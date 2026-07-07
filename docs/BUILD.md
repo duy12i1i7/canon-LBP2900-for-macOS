@@ -58,7 +58,7 @@ cd captdriver
 patch -p1 < /path/to/patches/lbp2900-macos.patch
 ```
 
-It contains four changes:
+It contains six changes:
 
 1. **Hang fix** — register the LBP2900 with the LBP3010 ("WORKS") status
    strategy (`capt_get_xstatus_only` / `capt_wait_xready_only`) so the per-page
@@ -72,6 +72,13 @@ It contains four changes:
    `std.h`) and check-before-wait, so multi-page jobs print near-continuously.
    Measured: inter-page gap dropped from ~9–11 s to ~6–7 s per page (engine
    native is ~5 s).
+5. **Bounded wait timeouts** — every status-wait loop is capped
+   (`CAPT_WAIT_POLLS_PAGE`/`_JOB` in `prn_lbp2900.c`, ~20–25 s). With fix #1 these
+   are essentially never hit, but they guarantee a freak page whose status never
+   settles can't hang the queue forever (a safety net inspired by the
+   bechou0410/canon-lbp2900-macos27-driver project, without its per-page slowdown).
+6. **Blink the printer LED on out-of-paper** — send the GPIO blink command when
+   `NOPAPER` is detected so it's obvious at the machine, not just in the queue.
 
 ## Quick self-test (no printer needed)
 

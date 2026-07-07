@@ -98,7 +98,8 @@ if ! /usr/bin/lpstat -p "$QUEUE" >/dev/null 2>&1; then
   URI="$(/usr/sbin/lpinfo -v 2>/dev/null | /usr/bin/awk '$2 ~ /^usb:/ && (tolower($2) ~ /canon/ || $2 ~ /LBP29?00/){print $2; exit}')"
   [ -z "$URI" ] && URI="$(/bin/cat "$STASH/device-uri" 2>/dev/null)"
   if [ -n "$URI" ] && [ -f "$PPD" ]; then
-    /usr/sbin/lpadmin -p "$QUEUE" -v "$URI" -P "$PPD" -E -D "Canon LBP2900" -o printer-is-shared=false \
+    /usr/sbin/lpadmin -p "$QUEUE" -v "$URI" -P "$PPD" -E -D "Canon LBP2900" \
+      -o printer-is-shared=false -o printer-error-policy=stop-printer \
       && /usr/bin/logger -t lbp2900-heal "restored queue"
   fi
 fi
@@ -140,7 +141,8 @@ fi
 
 echo "    Found: $URI"
 echo "==> 4/5  Creating print queue '$QUEUE'"
-"$LPADMIN" -p "$QUEUE" -v "$URI" -P "$PPD_DST" -E -D "$DESC" -o printer-is-shared=false
+"$LPADMIN" -p "$QUEUE" -v "$URI" -P "$PPD_DST" -E -D "$DESC" \
+  -o printer-is-shared=false -o printer-error-policy=stop-printer
 "$CUPSENABLE" "$QUEUE" 2>/dev/null || true
 "$CUPSACCEPT" "$QUEUE" 2>/dev/null || true
 

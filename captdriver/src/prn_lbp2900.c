@@ -36,6 +36,15 @@
 
 uint16_t job;
 
+/* Safety nets: with capt_get_xstatus_only the page counters converge in well
+ * under a second, so these bounds are almost never hit — they exist purely so a
+ * freak page whose status never settles can't hang the whole queue forever.
+ * At CAPT_POLL_US (100 ms) per poll: 200 -> ~20 s, 250 -> ~25 s. */
+enum {
+	CAPT_WAIT_POLLS_PAGE = 200,
+	CAPT_WAIT_POLLS_JOB  = 250,
+};
+
 struct printer_gpio_s {
 	const uint8_t (*init);
 	const uint8_t (*blink);
@@ -314,9 +323,14 @@ static bool lbp2900_page_prologue(struct printer_state_s *state, const struct pa
 		lbp2900_wait_ready(state->ops);
 	}
 
-	while (1) {
+	for (unsigned polls = 0; ; ++polls) {
 		if (! FLAG(lbp2900_get_status(state->ops), CAPT_FL_BUFFERFULL))
 			break;
+		if (polls >= CAPT_WAIT_POLLS_PAGE) {
+			fprintf(stderr, "WARNING: CAPT: buffer stayed full ~%us; proceeding\n",
+					CAPT_WAIT_POLLS_PAGE / 10);
+			break;
+		}
 		usleep(CAPT_POLL_US);
 	}
 
@@ -340,10 +354,15 @@ static bool lbp2900_page_epilogue(struct printer_state_s *state, const struct pa
 
 	/* waiting until the page is received (check first, then poll finely so
 	 * a ready printer isn't stalled a whole second before the next page) */
-	while (1) {
+	for (unsigned polls = 0; ; ++polls) {
 	  status = lbp2900_get_status(state->ops);
 	  if (status->page_received == status->page_decoding)
 	    break;
+	  if (polls >= CAPT_WAIT_POLLS_PAGE) {
+	    fprintf(stderr, "WARNING: CAPT: page-received didn't settle ~%us; proceeding\n",
+	            CAPT_WAIT_POLLS_PAGE / 10);
+	    break;
+	  }
 	  usleep(CAPT_POLL_US);
 	}
 	send_job_start(2, status->page_decoding);
@@ -355,7 +374,8 @@ static bool lbp2900_page_epilogue(struct printer_state_s *state, const struct pa
 
 	send_job_start(6, status->page_decoding);
 
-	while (1) {
+	bool blinking = false;
+	for (unsigned polls = 0; ; ++polls) {
 		const struct capt_status_s *status = lbp2900_get_status(state->ops);
 		/* Interesting. Using page_printing here results in shifted print */
 		if (status->page_out == status->page_decoding) {
@@ -367,9 +387,20 @@ static bool lbp2900_page_epilogue(struct printer_state_s *state, const struct pa
 			fprintf(stderr, "DEBUG: CAPT: no paper\n");
 			/* Surface "Out of paper" in the macOS print queue window. */
 			fprintf(stderr, "STATE: +media-empty\n");
+			/* Blink the printer's LED so it's obvious at the machine. */
+			if (! blinking) {
+				capt_sendrecv(CAPT_GPIO, lbp2900_gpio_blink,
+						ARRAY_SIZE(lbp2900_gpio_blink), NULL, 0);
+				blinking = true;
+			}
 			if (FLAG(status, CAPT_FL_PRINTING) || FLAG(status, CAPT_FL_PROCESSING1))
 				continue;
 			return false;
+		}
+		if (polls >= CAPT_WAIT_POLLS_PAGE) {
+			fprintf(stderr, "WARNING: CAPT: page-out didn't settle ~%us; continuing\n",
+					CAPT_WAIT_POLLS_PAGE / 10);
+			return true;
 		}
 		usleep(CAPT_POLL_US);
 	}
@@ -378,11 +409,18 @@ static bool lbp2900_page_epilogue(struct printer_state_s *state, const struct pa
 static void lbp2900_job_epilogue(struct printer_state_s *state)
 {
 	uint8_t jbuf[2] = { LO(job), HI(job) };
+	const struct capt_status_s *status = NULL;
 
-	while (1) {
-		const struct capt_status_s *status = lbp2900_get_status(state->ops);
+	for (unsigned polls = 0; ; ++polls) {
+		status = lbp2900_get_status(state->ops);
 		if (status->page_completed == status->page_decoding) {
 			send_job_start(4, status->page_completed);
+			break;
+		}
+		if (polls >= CAPT_WAIT_POLLS_JOB) {
+			fprintf(stderr, "WARNING: CAPT: page-completed didn't settle ~%us; ending job\n",
+					CAPT_WAIT_POLLS_JOB / 10);
+			send_job_start(4, status->page_decoding);
 			break;
 		}
 		usleep(CAPT_POLL_US);
